@@ -16,3 +16,13 @@ def mad(gender_counts):
     normalized = [man_count / total, woman_count / total]
     mad = sum(abs(p - 0.5) for p in normalized) / 2
     return mad
+
+# Function to calculate the miss rate of the prompt in the caption
+def miss_rate(prompt, caption):
+    return 0 if all(word in caption.lower() for word in prompt.lower().split()) else 1 # 0 is best, 1 is worst
+
+# Function to calculate the hallucination score of the prompt in the caption
+def hallucination_score(prompt, caption):
+    p_set = set(prompt.lower().split())
+    c_set = set(caption.lower().split())
+    return 1 - len(p_set & c_set) / len(p_set | c_set) if p_set | c_set else 0 # 0 is best, 1 is worst

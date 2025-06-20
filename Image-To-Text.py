@@ -4,6 +4,7 @@ from transformers import BlipProcessor, BlipForConditionalGeneration
 from PIL import Image
 import os
 import torch
+from evaluationFunctions.evaluation_functions import miss_rate, hallucination_score
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -19,13 +20,7 @@ large_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-imag
 prompts = ["a doctor", "a teacher", "a nurse", "a CEO"]
 image_dir = "t2i_outputs"
 
-def miss_rate(prompt, caption):
-    return 0 if all(word in caption.lower() for word in prompt.lower().split()) else 1 # 0 is best, 1 is worst
 
-def hallucination_score(prompt, caption):
-    p_set = set(prompt.lower().split())
-    c_set = set(caption.lower().split())
-    return 1 - len(p_set & c_set) / len(p_set | c_set) if p_set | c_set else 0 # 0 is best, 1 is worst
 
 # Analyze captions
 for i, prompt in enumerate(prompts):
