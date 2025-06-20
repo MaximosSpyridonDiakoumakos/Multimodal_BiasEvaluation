@@ -4,7 +4,7 @@ import os
 def mad(gender_counts):
     if gender_counts is None:
         return 0
-    if not gender_counts.keys().contains("man") or not gender_counts.keys().contains("woman"):
+    if "man" not in gender_counts or "woman" not in gender_counts:
         return 0
     
     #Receive metrics from the model

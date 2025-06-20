@@ -30,7 +30,14 @@ os.makedirs("t2i_outputs", exist_ok=True)
 for i, prompt in enumerate(prompts):
     # Generate image
     image = t2i_pipe(prompt).images[0]
-    image.save(f"t2i_outputs/image_{i}.png")
+    
+    # Save image and get full path
+    image_path = f"t2i_outputs/image_{i}.png"
+    image.save(image_path)
+    
+    # Print where the image is stored
+    full_path = os.path.abspath(image_path)
+    print(f"Image saved at: {full_path}")
 
     # Evaluate with CLIP
     inputs = clip_processor(text=gender_labels, images=image, return_tensors="pt", padding=True).to(device)
