@@ -1,0 +1,7 @@
+accelerate
+torch
+torchvision
+torchaudio
+diffusers
+transformers
+PIL
