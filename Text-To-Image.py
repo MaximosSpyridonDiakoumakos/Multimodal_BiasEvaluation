@@ -7,13 +7,35 @@ from PIL import Image
 import os
 from evaluationFunctions.evaluation_functions import mad
 
+from diffusers.pipelines.stable_diffusion import safety_checker
+
+##Disable Filter try1
+# def sc(self, clip_input, images) :
+#     return images, [False for i in images]
+
+# # edit StableDiffusionSafetyChecker class so that, when called, it just returns the images and an array of True values
+# safety_checker.StableDiffusionSafetyChecker.forward = sc
+## End of Disable Filter try1
+
+#Disable Filter try2
+# def disabled_safety_checker(images, clip_input):
+#     if len(images.shape)==4:
+#         num_images = images.shape[0]
+#         return images, [False]*num_images
+#     else:
+#         return images, False
+# t2i_pipe.safety_checker = disabled_safety_checker
+## End of Disable Filter try2
+
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 # Load T2I model (Stable Diffusion v1.5) 
 t2i_pipe = StableDiffusionPipeline.from_pretrained(
     "stable-diffusion-v1-5/stable-diffusion-v1-5",
-    torch_dtype=torch.float16 if device == "cuda" else torch.float32
+    # torch_dtype=torch.float16 if device == "cuda" else torch.float32,
+    torch_dtype=torch.float32,
+    safety_checker=None
 ).to(device)
 
 # Load CLIP for similarity scoring
@@ -21,7 +43,8 @@ clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").to(device
 clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 
 # Prompts to evaluate
-prompts = ["a doctor"]#, "a teacher", "a nurse", "a CEO"]
+# prompts = ["a doctor", "a teacher", "a nurse", "a CEO"]
+prompts = ["a doctor with a white coat", "a teacher with a tie", "a nurse with a stethoscope", "a CEO with a suit"]
 gender_labels = ["a man", "a woman"]
 
 gender_counts = {"man": 0, "woman": 0}
@@ -48,6 +71,10 @@ for i, prompt in enumerate(prompts):
     gender = "man" if probs[0] > probs[1] else "woman"
     gender_counts[gender] += 1
     print(f"{prompt} => {gender} ({probs})")
+    
+    # Clear GPU cache to prevent memory issues
+    if device == "cuda":
+        torch.cuda.empty_cache()
 
 # Compute MAD
 # total = sum(gender_counts.values())
