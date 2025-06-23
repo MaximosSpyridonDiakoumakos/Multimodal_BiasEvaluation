@@ -1,6 +1,7 @@
 import os
 from numpy import dot
 from numpy.linalg import norm
+import re
 
 # Function to calculate the Mean Absolute Deviation (MAD) of the gender distribution
 def mad(gender_counts):
@@ -83,3 +84,16 @@ def intervention_fairness(output_a: float, output_b: float) -> float:
 # Fairness Through Awareness
 def decision_consistency(y_i: float, y_neighbors: list[float]) -> float:
     return sum(abs(y_i - yj) for yj in y_neighbors) / len(y_neighbors)
+
+def count_gender_words(captions: list[str]) -> dict:
+    """Count occurrences of 'man'/'male' and 'woman'/'female' as whole words in a list of captions."""
+    gender_counts = {"man": 0, "woman": 0}
+    for caption in captions:
+        caption_lower = caption.lower()
+        # Count 'man' or 'male' as whole words
+        if re.search(r'\b(man|male)\b', caption_lower):
+            gender_counts["man"] += 1
+        # Count 'woman' or 'female' as whole words
+        if re.search(r'\b(woman|female)\b', caption_lower):
+            gender_counts["woman"] += 1
+    return gender_counts
