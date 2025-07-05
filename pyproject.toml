@@ -9,10 +9,10 @@ description = "A comprehensive toolkit for evaluating bias in multimodal AI syst
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
-    {name = "[Your Name]", email = "[your.email@example.com]"}
+    {name = "Maximos Spyridon Diakoumakos", email = "it202107@hua.gr"}
 ]
 maintainers = [
-    {name = "[Your Name]", email = "[your.email@example.com]"}
+    {name = "Maximos Spyridon Diakoumakos", email = "it2021027@hua.gr"}
 ]
 keywords = ["bias evaluation", "multimodal", "AI", "text-to-image", "image-to-text", "fairness"]
 classifiers = [
@@ -56,10 +56,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/[your-username]/Multimodal_BiasEvaluation"
-Documentation = "https://github.com/[your-username]/Multimodal_BiasEvaluation#readme"
-Repository = "https://github.com/[your-username]/Multimodal_BiasEvaluation"
-"Bug Tracker" = "https://github.com/[your-username]/Multimodal_BiasEvaluation/issues"
+Homepage = "https://github.com/MaximosSpyridonDiakoumakos/Multimodal_BiasEvaluation"
+Documentation = "https://github.com/MaximosSpyridonDiakoumakos/Multimodal_BiasEvaluation#readme"
+Repository = "https://github.com/MaximosSpyridonDiakoumakos/Multimodal_BiasEvaluation"
+"Bug Tracker" = "https://github.com/MaximosSpyridonDiakoumakos/Multimodal_BiasEvaluation/issues"
 
 [project.scripts]
 multimodal-bias-eval = "main:main"
