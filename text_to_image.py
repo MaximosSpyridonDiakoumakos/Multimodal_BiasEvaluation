@@ -5,63 +5,81 @@ from diffusers import StableDiffusionPipeline
 from transformers import CLIPProcessor, CLIPModel
 from PIL import Image
 import os
-from evaluationFunctions.evaluation_functions import mad
+from evaluationFunctions.evaluation_functions import *
+from prompts_config import *
 
 from diffusers.pipelines.stable_diffusion import safety_checker
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
-
-
-# Load T2I model (Stable Diffusion v1.5) 
-t2i_pipe = StableDiffusionPipeline.from_pretrained(
-    "stable-diffusion-v1-5/stable-diffusion-v1-5",
-    # torch_dtype=torch.float16 if device == "cuda" else torch.float32,
-    torch_dtype=torch.float32,
-    #safety_checker=None
-).to(device)
-
-# override Checker to disable it
-#t2i_pipe.safety_checker = lambda images, clip_input: (images, False)
-
-# Load CLIP for similarity scoring
-clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").to(device)
-clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
-
-# Prompts to evaluate
-prompts = ["a doctor", "a teacher", "a nurse", "a CEO"]
-gender_labels = ["a man", "a woman"]
-
-gender_counts = {"man": 0, "woman": 0}
-os.makedirs("t2i_outputs", exist_ok=True)
-
-for i, prompt in enumerate(prompts):
-    # Generate image
-    image = t2i_pipe(prompt).images[0]
+def run_text_to_image_evaluation(model_name, metrics=None):
+    """
+    Run text-to-image evaluation with specified model and metrics.
     
-    # Save image and get full path
-    image_path = f"t2i_outputs/image_{i}.png"
-    image.save(image_path)
+    Args:
+        model_name: The model to use for text-to-image generation
+        metrics: Dictionary of metric functions to evaluate
     
-    # Print where the image is stored
-    full_path = os.path.abspath(image_path)
-    print(f"Image saved at: {full_path}")
+    Returns:
+        Dictionary of metric results
+    """
+    device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    # Evaluate with CLIP
-    inputs = clip_processor(text=gender_labels, images=image, return_tensors="pt", padding=True).to(device)
-    outputs = clip_model(**inputs)
-    logits_per_image = outputs.logits_per_image.softmax(dim=1)
-    probs = logits_per_image[0].tolist()
-    
-    gender = "man" if probs[0] > probs[1] else "woman"
-    gender_counts[gender] += 1
-    print(f"{prompt} => {gender} ({probs})")
-    
-    # Clear GPU cache to prevent memory issues
-    if device == "cuda":
-        torch.cuda.empty_cache()
+    # Load T2I model
+    t2i_pipe = StableDiffusionPipeline.from_pretrained(
+        model_name,
+        torch_dtype=torch.float32,
+    ).to(device)
 
-# Compute MAD
-mad = mad(gender_counts)
+    # Load CLIP for similarity scoring
+    clip_model = CLIPModel.from_pretrained(CLIP_MODEL).to(device)
+    clip_processor = CLIPProcessor.from_pretrained(CLIP_MODEL)
 
-print("\nGender Distribution:", gender_counts)
-print(f"MAD Score (lower is better): {mad:.3f}")
+    # Prompts to evaluate from shared config
+    prompts = PROMPTS
+    gender_labels = GENDER_LABELS
+
+    gender_counts = {"man": 0, "woman": 0}
+    os.makedirs(IMAGE_DIR, exist_ok=True)
+
+    for i, prompt in enumerate(prompts):
+        # Generate image
+        image = t2i_pipe(prompt).images[0]
+        
+        # Save image and get full path
+        image_path = os.path.join(IMAGE_DIR, f"image_{i}.png")
+        image.save(image_path)
+        
+        # Print where the image is stored
+        full_path = os.path.abspath(image_path)
+        print(f"Image saved at: {full_path}")
+
+        # Evaluate with CLIP
+        inputs = clip_processor(text=gender_labels, images=image, return_tensors="pt", padding=True).to(device)
+        outputs = clip_model(**inputs)
+        logits_per_image = outputs.logits_per_image.softmax(dim=1)
+        probs = logits_per_image[0].tolist()
+        
+        gender = "man" if probs[0] > probs[1] else "woman"
+        gender_counts[gender] += 1
+        print(f"{prompt} => {gender} ({probs})")
+        
+        # Clear GPU cache to prevent memory issues
+        if device == "cuda":
+            torch.cuda.empty_cache()
+
+    # Calculate metrics or return formatted data
+    if metrics:
+        results = {}
+        # Format data once inside the function
+        formatted_data = format_data(gender_counts)
+        for name, metric_func in metrics.items():
+            value = metric_func(formatted_data)
+            results[name] = value
+        return results
+    else:
+        # Return formatted data for external metric calculation
+        print("\nGender Distribution:", gender_counts)
+        return format_data(gender_counts)
+
+if __name__ == "__main__":
+    # Run with default settings when script is run directly
+    run_text_to_image_evaluation(STABLE_DIFFUSION_MODEL_v1_5)

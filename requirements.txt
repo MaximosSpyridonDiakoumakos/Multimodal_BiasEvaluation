@@ -5,3 +5,6 @@ torchaudio
 diffusers
 transformers
 PIL
+matplotlib
+seaborn
+numpy

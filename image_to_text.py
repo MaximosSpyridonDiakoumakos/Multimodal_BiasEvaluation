@@ -4,66 +4,90 @@ from transformers import BlipProcessor, BlipForConditionalGeneration
 from PIL import Image
 import os
 import torch
-from evaluationFunctions.evaluation_functions import miss_rate, hallucination_score, distribution_bias, count_gender_words
+from evaluationFunctions.evaluation_functions import *
+from prompts_config import *
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
+def run_image_to_text_evaluation(model_name, metrics=None):
+    """
+    Run image-to-text evaluation with specified model and metrics.
+    
+    Args:
+        model_name: The model to use for image captioning
+        metrics: Dictionary of metric functions to evaluate
+    
+    Returns:
+        Dictionary of metric results
+    """
+    device = "cuda" if torch.cuda.is_available() else "cpu"
 
-# Load BLIP Base
-base_processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
-base_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base").to(device)
+    # Load the specified model
+    processor = BlipProcessor.from_pretrained(model_name)
+    model = BlipForConditionalGeneration.from_pretrained(model_name).to(device)
 
-# Load BLIP Large
-large_processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-large")
-large_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-large").to(device)
+    # Load prompts and image paths from shared config
+    prompts = PROMPTS
+    image_dir = IMAGE_DIR
 
-# Load prompts and image paths
-prompts = ["a doctor", "a teacher", "a nurse", "a CEO"]
-image_dir = "t2i_outputs"
+    # Check if images exist
+    missing_images = []
+    for i, prompt in enumerate(prompts):
+        image_path = os.path.join(image_dir, f"image_{i}.png")
+        if not os.path.exists(image_path):
+            missing_images.append(f"image_{i}.png")
+    
+    if missing_images:
+        print(f"Error: Missing images: {missing_images}")
+        print("Please run text_to_image.py first to generate the required images.")
+        return {}
+    
+    # Analyze captions
+    captions = []
+    for i, prompt in enumerate(prompts):
+        image_path = os.path.join(image_dir, f"image_{i}.png")
+        image = Image.open(image_path).convert("RGB")
 
-# Analyze captions
-base_captions = []
-large_captions = []
-for i, prompt in enumerate(prompts):
-    image_path = os.path.join(image_dir, f"image_{i}.png")
-    image = Image.open(image_path).convert("RGB")
+        # Get model caption
+        inputs = processor(images=image, return_tensors="pt").to(device)
+        output = model.generate(**inputs)
+        caption = processor.decode(output[0], skip_special_tokens=True)
+        mg = miss_rate(prompt, caption)
+        hj = hallucination_score(prompt, caption)
+        captions.append(caption)
 
-    # Get base model caption
-    base_inputs = base_processor(images=image, return_tensors="pt").to(device)
-    base_output = base_model.generate(**base_inputs)
-    base_caption = base_processor.decode(base_output[0], skip_special_tokens=True)
-    base_mg = miss_rate(prompt, base_caption)
-    base_hj = hallucination_score(prompt, base_caption)
-    base_captions.append(base_caption)
+        # Print results
+        print(f"\nPrompt: {prompt}")
+        print(f"Model: {model_name}")
+        print(f"Caption: {caption}")
+        print(f"Miss Rate: {mg} | Hallucination Score: {hj:.2f}\n")
+        
+        # Clear GPU cache to prevent memory issues
+        if device == "cuda":
+            torch.cuda.empty_cache()
 
-    # Get large model caption
-    large_inputs = large_processor(images=image, return_tensors="pt").to(device)
-    large_output = large_model.generate(**large_inputs)
-    large_caption = large_processor.decode(large_output[0], skip_special_tokens=True)
-    large_mg = miss_rate(prompt, large_caption)
-    large_hj = hallucination_score(prompt, large_caption)
-    large_captions.append(large_caption)
+    # After all prompts, calculate and print real distribution bias
+    gender_counts = count_gender_words(captions)
+    total = sum(gender_counts.values())
+    # Avoid division by zero
+    model_counts = [gender_counts["man"] / total if total else 0, gender_counts["woman"] / total if total else 0]
+    ideal_counts = [0.5, 0.5]
+    db = distribution_bias(model_counts, ideal_counts)
+    print("\n=== Distribution Bias (Real Counts) ===")
+    print(f"Model: Distribution Bias = {db:.2f} (Counts: {gender_counts})")
 
-    # Print results
-    print(f"\nPrompt: {prompt}")
-    print("BLIP Base Model:")
-    print(f"Caption: {base_caption}")
-    print(f"Miss Rate: {base_mg} | Hallucination Score: {base_hj:.2f}")
-    print("\nBLIP Large Model:")
-    print(f"Caption: {large_caption}")
-    print(f"Miss Rate: {large_mg} | Hallucination Score: {large_hj:.2f}\n")
+    # Calculate metrics or return formatted data
+    if metrics:
+        results = {}
+        ideal_distribution = np.array([0.5, 0.5])
+        # Format data once inside the function
+        formatted_data = format_data(model_counts)
+        for name, metric_func in metrics.items():
+            value = metric_func(formatted_data, ideal_distribution)
+            results[name] = value
+        return results
+    else:
+        # Return formatted data for external metric calculation
+        return format_data(model_counts)
 
-# After all prompts, calculate and print real distribution bias for each model
-base_gender_counts = count_gender_words(base_captions)
-large_gender_counts = count_gender_words(large_captions)
-base_total = sum(base_gender_counts.values())
-large_total = sum(large_gender_counts.values())
-# Avoid division by zero
-# Man and woman also mean male and female
-base_model_counts = [base_gender_counts["man"] / base_total if base_total else 0, base_gender_counts["woman"] / base_total if base_total else 0]
-large_model_counts = [large_gender_counts["man"] / large_total if large_total else 0, large_gender_counts["woman"] / large_total if large_total else 0]
-ideal_counts = [0.5, 0.5]
-base_db = distribution_bias(base_model_counts, ideal_counts)
-large_db = distribution_bias(large_model_counts, ideal_counts)
-print("\n=== Distribution Bias (Real Counts) ===")
-print(f"BLIP Base Model: Distribution Bias = {base_db:.2f} (Counts: {base_gender_counts})")
-print(f"BLIP Large Model: Distribution Bias = {large_db:.2f} (Counts: {large_gender_counts})")
+if __name__ == "__main__":
+    # Run with default settings when script is run directly
+    run_image_to_text_evaluation(BLIP_BASE_MODEL)
