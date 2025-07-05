@@ -7,7 +7,7 @@ name = "multimodal-bias-evaluation"
 version = "1.0.0"
 description = "A comprehensive toolkit for evaluating bias in multimodal AI systems"
 readme = "README.md"
-license = {text = "MIT"}
+license = {text = "Apache"}
 authors = [
     {name = "Maximos Spyridon Diakoumakos", email = "it202107@hua.gr"}
 ]
