@@ -7,12 +7,15 @@ from image_to_text import run_image_to_text_evaluation
 from evaluationFunctions.evaluation_functions import *
 from evaluationFunctions.visualization import *
 from prompts_config import *
+import torch
 
 
 def main():
     """
     Main function to run multimodal bias evaluation with configurable models and metrics.
     """
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     
     # Define metrics for text-to-image evaluation
     t2i_metrics = {
