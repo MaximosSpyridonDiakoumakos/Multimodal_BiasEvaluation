@@ -5,18 +5,20 @@ from PIL import Image
 import os
 import torch
 from evaluationFunctions.evaluation_functions import *
-from prompts_config import *
 
-def run_image_to_text_evaluation(model_name, metrics=None):
+def run_image_to_text_evaluation(model_name, metrics=None, prompts=None, gender_categories=None, return_raw_data=False):
     """
     Run image-to-text evaluation with specified model and metrics.
     
     Args:
         model_name: The model to use for image captioning
         metrics: Dictionary of metric functions to evaluate
+        prompts: List of prompts to evaluate
+        gender_categories: List of gender categories for counting
+        return_raw_data: If True, return raw captions and gender counts instead of processed metrics
     
     Returns:
-        Dictionary of metric results
+        Dictionary of metric results or raw data based on return_raw_data parameter
     """
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -24,8 +26,11 @@ def run_image_to_text_evaluation(model_name, metrics=None):
     processor = BlipProcessor.from_pretrained(model_name)
     model = BlipForConditionalGeneration.from_pretrained(model_name).to(device)
 
-    # Load prompts and image paths from shared config
-    prompts = PROMPTS
+    # Use provided prompts and gender categories
+    if prompts is None:
+        raise ValueError("prompts parameter is required")
+    if gender_categories is None:
+        raise ValueError("gender_categories parameter is required")
     image_dir = IMAGE_DIR
 
     # Check if images exist
@@ -65,7 +70,7 @@ def run_image_to_text_evaluation(model_name, metrics=None):
             torch.cuda.empty_cache()
 
     # After all prompts, calculate and print real distribution bias
-    gender_counts = count_gender_words(captions)
+    gender_counts = count_gender_words(captions, gender_categories)
     total = sum(gender_counts.values())
     # Avoid division by zero
     model_counts = [gender_counts["man"] / total if total else 0, gender_counts["woman"] / total if total else 0]
@@ -74,8 +79,10 @@ def run_image_to_text_evaluation(model_name, metrics=None):
     print("\n=== Distribution Bias (Real Counts) ===")
     print(f"Model: Distribution Bias = {db:.2f} (Counts: {gender_counts})")
 
-    # Calculate metrics or return formatted data
-    if metrics:
+    # Return raw data or calculate metrics based on parameter
+    if return_raw_data:
+        return {"captions": captions, "gender_counts": gender_counts, "model_counts": model_counts}
+    elif metrics:
         results = {}
         ideal_distribution = np.array([0.5, 0.5])
         # Format data once inside the function

@@ -10,16 +10,19 @@ from prompts_config import *
 
 from diffusers.pipelines.stable_diffusion import safety_checker
 
-def run_text_to_image_evaluation(model_name, metrics=None):
+def run_text_to_image_evaluation(model_name, metrics=None, prompts=None, gender_labels=None, return_raw_data=False):
     """
     Run text-to-image evaluation with specified model and metrics.
     
     Args:
         model_name: The model to use for text-to-image generation
         metrics: Dictionary of metric functions to evaluate
+        prompts: List of prompts to evaluate
+        gender_labels: List of gender labels for CLIP evaluation
+        return_raw_data: If True, return raw gender counts instead of processed metrics
     
     Returns:
-        Dictionary of metric results
+        Dictionary of metric results or raw data based on return_raw_data parameter
     """
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -33,9 +36,11 @@ def run_text_to_image_evaluation(model_name, metrics=None):
     clip_model = CLIPModel.from_pretrained(CLIP_MODEL).to(device)
     clip_processor = CLIPProcessor.from_pretrained(CLIP_MODEL)
 
-    # Prompts to evaluate from shared config
-    prompts = PROMPTS
-    gender_labels = GENDER_LABELS
+    # Use provided prompts and gender labels
+    if prompts is None:
+        raise ValueError("prompts parameter is required")
+    if gender_labels is None:
+        raise ValueError("gender_labels parameter is required")
 
     gender_counts = {"man": 0, "woman": 0}
     os.makedirs(IMAGE_DIR, exist_ok=True)
@@ -66,8 +71,10 @@ def run_text_to_image_evaluation(model_name, metrics=None):
         if device == "cuda":
             torch.cuda.empty_cache()
 
-    # Calculate metrics or return formatted data
-    if metrics:
+    # Return raw data or calculate metrics based on parameter
+    if return_raw_data:
+        return gender_counts
+    elif metrics:
         results = {}
         # Format data once inside the function
         formatted_data = format_data(gender_counts)

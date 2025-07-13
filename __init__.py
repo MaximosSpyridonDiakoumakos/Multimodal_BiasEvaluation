@@ -31,7 +31,7 @@ from .evaluationFunctions.visualization import (
 
 # Import configuration
 from .prompts_config import (
-    PROMPTS, GENDER_LABELS, IMAGE_DIR,
+    GENDER_LABELS, IMAGE_DIR,
     STABLE_DIFFUSION_MODEL_v1_5, STABLE_DIFFUSION_XL_MODEL, STABLE_DIFFUSION_V1_4_MODEL,
     BLIP_BASE_MODEL, BLIP_LARGE_MODEL, CLIP_MODEL
 )
@@ -57,7 +57,6 @@ __all__ = [
     'create_summary_report',
     
     # Configuration
-    'PROMPTS',
     'GENDER_LABELS',
     'IMAGE_DIR',
     'STABLE_DIFFUSION_MODEL_v1_5',
