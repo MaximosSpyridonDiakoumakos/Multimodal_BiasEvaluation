@@ -71,7 +71,7 @@ def run_image_to_text_evaluation(model_name, metrics=None, prompts=None, gender_
             torch.cuda.empty_cache()
 
     # After all prompts, calculate and print real distribution bias
-    gender_counts = count_gender_words(captions, gender_categories)
+    gender_counts = count_gender_words(captions)
     total = sum(gender_counts.values())
     # Avoid division by zero
     model_counts = [gender_counts["man"] / total if total else 0, gender_counts["woman"] / total if total else 0]
