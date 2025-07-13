@@ -5,6 +5,7 @@ from PIL import Image
 import os
 import torch
 from evaluationFunctions.evaluation_functions import *
+from prompts_config import *
 
 def run_image_to_text_evaluation(model_name, metrics=None, prompts=None, gender_categories=None, return_raw_data=False):
     """
@@ -97,4 +98,4 @@ def run_image_to_text_evaluation(model_name, metrics=None, prompts=None, gender_
 
 if __name__ == "__main__":
     # Run with default settings when script is run directly
-    run_image_to_text_evaluation(BLIP_BASE_MODEL)
+    run_image_to_text_evaluation(BLIP_LARGE_MODEL)
