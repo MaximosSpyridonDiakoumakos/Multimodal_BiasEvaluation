@@ -8,7 +8,7 @@ from evaluationFunctions.evaluation_functions import *
 from evaluationFunctions.visualization import *
 from prompts_config import *
 import torch
-
+#import custom_models import *
 
 def main(plot_data=True):
     """
@@ -47,11 +47,13 @@ def main(plot_data=True):
         "stable_diffusion_v1_5": STABLE_DIFFUSION_MODEL_v1_5,
         #"stable_diffusion_xl": STABLE_DIFFUSION_XL_MODEL,
         #"stable_diffusion_v1_4": STABLE_DIFFUSION_V1_4_MODEL,
+        #"custom_model": custom_t2i_model,
     }
     
     i2t_models = {
         #"blip_base": BLIP_BASE_MODEL,
         "blip_large": BLIP_LARGE_MODEL,
+        #"custom_model": custom_i2t_model,
     }
     
     print("=== Multimodal Bias Evaluation ===")
