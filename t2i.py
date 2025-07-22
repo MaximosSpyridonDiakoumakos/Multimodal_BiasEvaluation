@@ -5,12 +5,12 @@ from diffusers import StableDiffusionPipeline
 from transformers import CLIPProcessor, CLIPModel
 from PIL import Image
 import os
-from evaluationFunctions.evaluation_functions import *
-from prompts_config import *
+from evaluationFunctions.eval_func import *
+from model_config import *
 
 from diffusers.pipelines.stable_diffusion import safety_checker
 
-def run_text_to_image_evaluation(model_name, metrics=None, prompts=None, gender_labels=None, return_raw_data=False):
+def run_text_to_image_evaluation(model_name, metrics=None, prompts=None, gender_labels=None, return_raw_data=False, num_images_per_prompt=1):
     """
     Run text-to-image evaluation with specified model and metrics.
     
@@ -20,6 +20,7 @@ def run_text_to_image_evaluation(model_name, metrics=None, prompts=None, gender_
         prompts: List of prompts to evaluate
         gender_labels: List of gender labels for CLIP evaluation
         return_raw_data: If True, return raw gender counts instead of processed metrics
+        num_images_per_prompt: Number of images to generate per prompt (default: 1)
     
     Returns:
         Dictionary of metric results or raw data based on return_raw_data parameter
@@ -46,30 +47,32 @@ def run_text_to_image_evaluation(model_name, metrics=None, prompts=None, gender_
     os.makedirs(IMAGE_DIR, exist_ok=True)
 
     for i, prompt in enumerate(prompts):
-        # Generate image
-        image = t2i_pipe(prompt).images[0]
-        
-        # Save image and get full path
-        image_path = os.path.join(IMAGE_DIR, f"image_{i}.png")
-        image.save(image_path)
-        
-        # Print where the image is stored
-        full_path = os.path.abspath(image_path)
-        print(f"Image saved at: {full_path}")
+        for img_idx in range(num_images_per_prompt):
+            # Generate image
+            image = t2i_pipe(prompt).images[0]
+            
+            # Save image and get full path
+            image_filename = f"image_{i}_img_{img_idx}.png"
+            image_path = os.path.join(IMAGE_DIR, image_filename)
+            image.save(image_path)
+            
+            # Print where the image is stored
+            full_path = os.path.abspath(image_path)
+            print(f"Image saved at: {full_path}")
 
-        # Evaluate with CLIP
-        inputs = clip_processor(text=gender_labels, images=image, return_tensors="pt", padding=True).to(device)
-        outputs = clip_model(**inputs)
-        logits_per_image = outputs.logits_per_image.softmax(dim=1)
-        probs = logits_per_image[0].tolist()
-        
-        gender = "man" if probs[0] > probs[1] else "woman"
-        gender_counts[gender] += 1
-        print(f"{prompt} => {gender} ({probs})")
-        
-        # Clear GPU cache to prevent memory issues
-        if device == "cuda":
-            torch.cuda.empty_cache()
+            # Evaluate with CLIP
+            inputs = clip_processor(text=gender_labels, images=image, return_tensors="pt", padding=True).to(device)
+            outputs = clip_model(**inputs)
+            logits_per_image = outputs.logits_per_image.softmax(dim=1)
+            probs = logits_per_image[0].tolist()
+            
+            gender = "man" if probs[0] > probs[1] else "woman"
+            gender_counts[gender] += 1
+            print(f"{prompt} (img {img_idx + 1}) => {gender} ({probs})")
+            
+            # Clear GPU cache to prevent memory issues
+            if device == "cuda":
+                torch.cuda.empty_cache()
 
     # Return raw data or calculate metrics based on parameter
     if return_raw_data:

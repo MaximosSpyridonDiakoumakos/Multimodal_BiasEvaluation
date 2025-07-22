@@ -14,11 +14,11 @@ __email__ = "it2021027@hua.gr"
 
 # Import main functions for easy access
 from .main import main
-from .text_to_image import run_text_to_image_evaluation
-from .image_to_text import run_image_to_text_evaluation
+from .t2i import run_text_to_image_evaluation
+from .i2t import run_image_to_text_evaluation
 
 # Import evaluation functions
-from .evaluationFunctions.evaluation_functions import (
+from .evaluationFunctions.eval_func import (
     mad, distribution_bias, miss_rate, hallucination_score,
     format_data, count_gender_words
 )
@@ -30,7 +30,7 @@ from .evaluationFunctions.visualization import (
 )
 
 # Import configuration
-from .prompts_config import (
+from .model_config import (
     GENDER_LABELS, IMAGE_DIR,
     STABLE_DIFFUSION_MODEL_v1_5, STABLE_DIFFUSION_XL_MODEL, STABLE_DIFFUSION_V1_4_MODEL,
     BLIP_BASE_MODEL, BLIP_LARGE_MODEL, CLIP_MODEL

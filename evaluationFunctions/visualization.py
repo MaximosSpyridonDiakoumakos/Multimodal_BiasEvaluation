@@ -160,19 +160,32 @@ def create_summary_report(results: Dict[str, Any], save_path: str = None):
         for i, (model, score) in enumerate(zip(t2i_models, t2i_mad_scores)):
             axes[0, 0].text(i, score + 0.01, f'{score:.3f}', ha='center', va='bottom')
     
-    # Plot 2: Image-to-Text Distribution Bias
+    # Plot 2: Image-to-Text Metrics
     if 'image_to_text' in results:
-        i2t_metrics = list(results['image_to_text'].keys())
-        i2t_scores = list(results['image_to_text'].values())
-        
-        axes[0, 1].bar(i2t_metrics, i2t_scores, color='lightgreen')
-        axes[0, 1].set_title('Image-to-Text Distribution Bias')
-        axes[0, 1].set_ylabel('Bias Score')
-        axes[0, 1].tick_params(axis='x', rotation=45)
-        
-        # Add value labels
-        for i, (metric, score) in enumerate(zip(i2t_metrics, i2t_scores)):
-            axes[0, 1].text(i, score + 0.01, f'{score:.3f}', ha='center', va='bottom')
+        i2t_results = results['image_to_text']
+        if i2t_results:
+            # Get the first model's results to extract metric names
+            first_model = list(i2t_results.keys())[0]
+            i2t_metrics = list(i2t_results[first_model].keys())
+            
+            # Calculate average scores across models for each metric
+            metric_scores = {}
+            for metric in i2t_metrics:
+                scores = [i2t_results[model].get(metric, 0) for model in i2t_results.keys()]
+                metric_scores[metric] = sum(scores) / len(scores)
+            
+            # Plot the metrics
+            metrics = list(metric_scores.keys())
+            scores = list(metric_scores.values())
+            
+            axes[0, 1].bar(metrics, scores, color='lightgreen')
+            axes[0, 1].set_title('Image-to-Text Metrics')
+            axes[0, 1].set_ylabel('Score')
+            axes[0, 1].tick_params(axis='x', rotation=45)
+            
+            # Add value labels
+            for i, (metric, score) in enumerate(zip(metrics, scores)):
+                axes[0, 1].text(i, score + 0.01, f'{score:.3f}', ha='center', va='bottom')
     
     # Plot 3: Overall comparison (placeholder for now)
     axes[1, 0].text(0.5, 0.5, 'Overall Comparison\n(To be implemented)', 
