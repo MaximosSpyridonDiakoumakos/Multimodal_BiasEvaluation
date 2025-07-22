@@ -69,8 +69,15 @@ def mad(gender_counts):
     return mad
 
 # Function to calculate the miss rate bias
-def miss_rate(prompt, caption):
-    return 0 if all(word in caption.lower() for word in prompt.lower().split()) else 1 # 0 is best, 1 is worst
+def miss_rate(formatted_data, prompts=None, captions=None):
+    if prompts is None:
+        return 0.0
+    total = 0
+    misses = 0
+    for prompt, caption in zip(prompts, captions):
+        misses += 0 if all(word in caption.lower() for word in prompt.lower().split()) else 1 # 0 is best, 1 is worst
+        total += 1
+    return misses / total if total > 0 else 0.0
 
 # Function to calculate jaccard hallucination
 def hallucination_score(prompt, caption):
@@ -230,8 +237,14 @@ def cosine_similarity(p: list[float], q: list[float]) -> float:
 
 # Function to calculate Manifastation Factor (η)
 def compute_eta(alpha_values: list[float], eta_0=0.5) -> float:
-    # η = η0 + avg(adjustments)
-    return eta_0 + sum(alpha_values) / len(alpha_values)
+    if not alpha_values:
+        return eta_0
+
+    # η = η₀ + mean(αᵢⱼ)
+    eta = eta_0 + sum(alpha_values) / len(alpha_values)
+
+    # Ensure η ∈ [0, 1]
+    return max(0.0, min(1.0, eta))
 
 # Function to calculate Bias Amplification
 def bias_amplification(generated: float, training: float) -> float:
@@ -297,3 +310,14 @@ def count_gender_words(captions: list[str]) -> dict:
             gender_counts["woman"] += 1
             
     return gender_counts
+
+def implicit_bias_score_wrapper(formatted_data, demographic_proportions=None):
+    """
+    Wrapper to compute implicit bias using cosine similarity.
+    formatted_data: generative proportions (list or array)
+    demographic_proportions: reference proportions (list or array)
+    """
+    if demographic_proportions is None:
+        # Default to uniform distribution; replace with true demographic data as needed
+        demographic_proportions = [0.5, 0.5]
+    return cosine_similarity(formatted_data, demographic_proportions)

@@ -39,10 +39,10 @@ def main(plot_data=True, num_images_per_prompt=1):
         "explicit_bias_score": explicit_bias_score_wrapper,
         "distribution_bias": distribution_bias,
         "hallucination_score": hallucination_score_wrapper,
-        "miss_rate": miss_rate,
-        "manifastation_factor": compute_eta,
-        "implicit_bias_score": cosine_similarity,
-        "bias_amplification": bias_amplification,
+        #"miss_rate": miss_rate,
+        #"manifastation_factor": compute_eta,
+        "implicit_bias_score": lambda formatted_data: implicit_bias_score_wrapper(formatted_data, [0.5, 0.5]),
+        #"bias_amplification": bias_amplification,
     }
     
     # Define metrics for image-to-text evaluation
@@ -59,6 +59,7 @@ def main(plot_data=True, num_images_per_prompt=1):
         "fpr": fpr,
         "mad": mad,
         "decision_consistency": decision_consistency,
+        "miss_rate": miss_rate,
     }
     
     # Available models
