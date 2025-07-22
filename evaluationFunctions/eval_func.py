@@ -69,13 +69,20 @@ def mad(gender_counts):
     return mad
 
 # Function to calculate the miss rate bias
-def miss_rate(formatted_data, prompts=None, captions=None):
-    if prompts is None:
+def miss_rate(prompt, caption):
+    return 0 if all(word in caption.lower() for word in prompt.lower().split()) else 1 # 0 is best, 1 is worst
+
+def miss_rate_wrapper(formatted_data, prompts=None, captions=None):
+    """
+    Computes the average miss rate over all prompt-caption pairs.
+    Assumes prompts and captions are lists of equal length, where each caption corresponds to a prompt.
+    """
+    if prompts is None or captions is None:
         return 0.0
     total = 0
     misses = 0
     for prompt, caption in zip(prompts, captions):
-        misses += 0 if all(word in caption.lower() for word in prompt.lower().split()) else 1 # 0 is best, 1 is worst
+        misses += miss_rate(prompt, caption)
         total += 1
     return misses / total if total > 0 else 0.0
 
@@ -235,6 +242,17 @@ def cosine_similarity(p: list[float], q: list[float]) -> float:
         return 0.0
     return dot(p, q) / (p_norm * q_norm)
 
+def implicit_bias_score_wrapper(formatted_data, demographic_proportions=None):
+    """
+    Wrapper to compute implicit bias using cosine similarity.
+    formatted_data: generative proportions (list or array)
+    demographic_proportions: reference proportions (list or array)
+    """
+    if demographic_proportions is None:
+        # Default to uniform distribution; replace with true demographic data as needed
+        demographic_proportions = [0.5, 0.5]
+    return cosine_similarity(formatted_data, demographic_proportions)
+
 # Function to calculate Manifastation Factor (η)
 def compute_eta(alpha_values: list[float], eta_0=0.5) -> float:
     if not alpha_values:
@@ -257,6 +275,20 @@ def tpr(true_positives: int, total: int) -> float:
         return 0.0
     return true_positives / total
 
+def tpr_wrapper(formatted_data, prompts=None, captions=None):
+    """
+    Wrapper for tpr to match metric function signature.
+    Assumes formatted_data is a dict or list with keys/indices for true_positives and total.
+    """
+    if isinstance(formatted_data, dict):
+        true_positives = formatted_data.get('true_positives', 0)
+        total = formatted_data.get('total', 0)
+    else:
+        if len(formatted_data) < 2:
+            return 0.0
+        true_positives, total = formatted_data[:2]
+    return tpr(true_positives, total)
+
 def error_rate(tpr_score: float) -> float:
     return 1 - tpr_score
 
@@ -274,12 +306,58 @@ def fpr_error_rate(fpr_score: float) -> float:
 def demographic_parity(group_a_rate: float, group_b_rate: float) -> float:
     return abs(group_a_rate - group_b_rate)
 
+def demographic_parity_wrapper(formatted_data, prompts=None, captions=None):
+    """
+    Computes demographic parity for a batch of results.
+    Assumes formatted_data is a 2-element array: [group_a_count, group_b_count]
+    """
+    if formatted_data is None or len(formatted_data) != 2:
+        return 0.0
+    total = sum(formatted_data)
+    if total == 0:
+        return 0.0
+    group_a_rate = formatted_data[0] / total
+    group_b_rate = formatted_data[1] / total
+    return demographic_parity(group_a_rate, group_b_rate)
+
 # Equality of Odds / Predictive Equality
 def equality_of_odds(fpr_a: float, fpr_b: float, fnr_a: float, fnr_b: float) -> float:
     return abs(fpr_a - fpr_b) + abs(fnr_a - fnr_b)
 
+def equality_of_odds_wrapper(formatted_data, prompts=None, captions=None):
+    """
+    Wrapper for equality_of_odds to match metric function signature.
+    Assumes formatted_data is a dict or list with keys/indices for fpr_a, fpr_b, fnr_a, fnr_b.
+    """
+    # Support both dict and list/tuple
+    if isinstance(formatted_data, dict):
+        fpr_a = formatted_data.get('fpr_a', 0.0)
+        fpr_b = formatted_data.get('fpr_b', 0.0)
+        fnr_a = formatted_data.get('fnr_a', 0.0)
+        fnr_b = formatted_data.get('fnr_b', 0.0)
+    else:
+        # Assume order: [fpr_a, fpr_b, fnr_a, fnr_b]
+        if len(formatted_data) < 4:
+            return 0.0
+        fpr_a, fpr_b, fnr_a, fnr_b = formatted_data[:4]
+    return equality_of_odds(fpr_a, fpr_b, fnr_a, fnr_b)
+
 def predictive_equality(fpr_a: float, fpr_b: float) -> float:
     return abs(fpr_a - fpr_b)
+
+def predictive_equality_wrapper(formatted_data, prompts=None, captions=None):
+    """
+    Wrapper for predictive_equality to match metric function signature.
+    Assumes formatted_data is a dict or list with keys/indices for fpr_a, fpr_b.
+    """
+    if isinstance(formatted_data, dict):
+        fpr_a = formatted_data.get('fpr_a', 0.0)
+        fpr_b = formatted_data.get('fpr_b', 0.0)
+    else:
+        if len(formatted_data) < 2:
+            return 0.0
+        fpr_a, fpr_b = formatted_data[:2]
+    return predictive_equality(fpr_a, fpr_b)
 
 # Intervention Fairness
 def intervention_fairness(output_a: float, output_b: float) -> float:
@@ -310,14 +388,3 @@ def count_gender_words(captions: list[str]) -> dict:
             gender_counts["woman"] += 1
             
     return gender_counts
-
-def implicit_bias_score_wrapper(formatted_data, demographic_proportions=None):
-    """
-    Wrapper to compute implicit bias using cosine similarity.
-    formatted_data: generative proportions (list or array)
-    demographic_proportions: reference proportions (list or array)
-    """
-    if demographic_proportions is None:
-        # Default to uniform distribution; replace with true demographic data as needed
-        demographic_proportions = [0.5, 0.5]
-    return cosine_similarity(formatted_data, demographic_proportions)
