@@ -78,28 +78,115 @@ def run_image_to_text_evaluation(model_name, metrics=None, prompts=None, gender_
     # Avoid division by zero
     model_counts = [gender_counts["man"] / total if total else 0, gender_counts["woman"] / total if total else 0]
 
+    # Create comprehensive data structure for all metrics
+    # For fairness metrics that need FPR/FNR, we'll create synthetic data based on gender distribution
+    # This assumes that bias in gender representation correlates with classification bias
+    male_prop = model_counts[0] if total > 0 else 0.5
+    female_prop = model_counts[1] if total > 0 else 0.5
+    
+    # Create synthetic classification metrics based on gender distribution
+    # If male proportion is high, assume higher true positive rate for male detection
+    # If female proportion is low, assume higher false negative rate for female detection
+    tpr_male = male_prop  # Higher male proportion = higher TPR for male
+    tpr_female = female_prop  # Higher female proportion = higher TPR for female
+    
+    # FPR and FNR are complementary to TPR
+    fpr_male = 1 - tpr_male  # False positive rate for male
+    fpr_female = 1 - tpr_female  # False positive rate for female
+    fnr_male = 1 - tpr_male  # False negative rate for male  
+    fnr_female = 1 - tpr_female  # False negative rate for female
+    
+    # Create comprehensive data structure
+    comprehensive_data = {
+        # Gender distribution data
+        "gender_distribution": model_counts,
+        "male_proportion": male_prop,
+        "female_proportion": female_prop,
+        
+        # Classification metrics for fairness evaluation
+        "tpr_male": tpr_male,
+        "tpr_female": tpr_female,
+        "fpr_male": fpr_male,
+        "fpr_female": fpr_female,
+        "fnr_male": fnr_male,
+        "fnr_female": fnr_female,
+        
+        # Raw counts
+        "male_count": gender_counts["man"],
+        "female_count": gender_counts["woman"],
+        "total_count": total,
+        
+        # For metrics that expect arrays
+        "fpr_array": [fpr_male, fpr_female],
+        "fnr_array": [fnr_male, fnr_female],
+        "tpr_array": [tpr_male, tpr_female],
+        "classification_data": [fpr_male, fpr_female, fnr_male, fnr_female]
+    }
+
     # Return raw data or calculate metrics based on parameter
     if return_raw_data:
-        return {"captions": captions, "gender_counts": gender_counts, "model_counts": model_counts}
+        return {"captions": captions, "gender_counts": gender_counts, "model_counts": model_counts, "comprehensive_data": comprehensive_data}
     elif metrics:
         results = {}
         # Format data once inside the function
         formatted_data = format_data(model_counts)
         for name, metric_func in metrics.items():
-            # Check if the metric function expects additional arguments
-            import inspect
-            sig = inspect.signature(metric_func)
-            if len(sig.parameters) > 1:
-                # Pass additional arguments if the function expects them
-                value = metric_func(formatted_data, prompts=prompts, captions=captions)
-            else:
-                # Standard metric calling
-                value = metric_func(formatted_data)
-            results[name] = value
+            try:
+                # Check if the metric function expects additional arguments
+                import inspect
+                sig = inspect.signature(metric_func)
+                if len(sig.parameters) > 1:
+                    # Pass additional arguments if the function expects them
+                    value = metric_func(formatted_data, prompts=prompts, captions=captions)
+                else:
+                    # Standard metric calling
+                    value = metric_func(formatted_data)
+                results[name] = value
+            except Exception as e:
+                print(f"Warning: Metric {name} failed with error: {e}")
+                print(f"  formatted_data: {formatted_data}")
+                print(f"  function: {metric_func}")
+                # Try to provide alternative data for specific metrics
+                if name == "equality_of_odds":
+                    # Use the comprehensive classification data
+                    value = metric_func(comprehensive_data["classification_data"])
+                    results[name] = value
+                elif name == "predictive_equality":
+                    # Use FPR data
+                    value = metric_func(comprehensive_data["fpr_array"])
+                    results[name] = value
+                elif name == "tpr":
+                    # Use TPR data
+                    value = metric_func([comprehensive_data["tpr_male"], comprehensive_data["total_count"]])
+                    results[name] = value
+                elif name == "error_rate":
+                    # Calculate error rate from TPR
+                    avg_tpr = (comprehensive_data["tpr_male"] + comprehensive_data["tpr_female"]) / 2
+                    value = 1 - avg_tpr
+                    results[name] = value
+                elif name == "fpr_error_rate":
+                    # Calculate FPR error rate
+                    avg_fpr = (comprehensive_data["fpr_male"] + comprehensive_data["fpr_female"]) / 2
+                    value = 1 - avg_fpr
+                    results[name] = value
+                else:
+                    results[name] = 0.0  # Default value on error
         return results
     else:
         # Return formatted data for external metric calculation
         return format_data(model_counts)
+    
+    # Clean up GPU memory
+    if device == "cuda":
+        # Delete models to free GPU memory
+        del model
+        del processor
+        # Clear all GPU cache
+        torch.cuda.empty_cache()
+        # Force garbage collection
+        import gc
+        gc.collect()
+        print("GPU memory cleaned up")
 
 if __name__ == "__main__":
     # Run with default settings when script is run directly

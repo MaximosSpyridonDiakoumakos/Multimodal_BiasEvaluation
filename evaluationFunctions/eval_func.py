@@ -148,7 +148,7 @@ def distribution_bias(counts):
     import numpy as np
 
     counts = np.array(counts)
-    total = counts.sum()
+    total = float(counts.sum())  # Convert to Python float
     
     if total == 0:
         return 0.0  # Avoid division by zero; no data means no observed bias
@@ -158,11 +158,11 @@ def distribution_bias(counts):
     ideal = 1.0 / len(counts)
     
     # Mean Absolute Deviation from uniform distribution
-    mad = np.mean(np.abs(proportions - ideal))
+    mad = float(np.mean(np.abs(proportions - ideal)))  # Convert to Python float
     
     # Normalize to [0, 1]
     normalized_bias = mad / (1 - ideal)
-    return normalized_bias
+    return float(normalized_bias)  # Ensure we return a Python float
 
 # Function to calculate Explicit Bias Score
 def explicit_bias_score_faintbench(correct_count, total_count):
@@ -240,7 +240,9 @@ def cosine_similarity(p: list[float], q: list[float]) -> float:
     q_norm = norm(q)
     if p_norm == 0 or q_norm == 0:
         return 0.0
-    return dot(p, q) / (p_norm * q_norm)
+    result = dot(p, q) / (p_norm * q_norm)
+    # Ensure we return a Python float, not a numpy scalar
+    return float(result)
 
 def implicit_bias_score_wrapper(formatted_data, demographic_proportions=None):
     """

@@ -32,7 +32,7 @@ def run_text_to_image_evaluation(model_name, metrics=None, prompts=None, gender_
         model_name,
         torch_dtype=torch.float32,
     ).to(device)
-
+    #print("\nDevice being used:", device, "\n")
     # Load CLIP for similarity scoring
     clip_model = CLIPModel.from_pretrained(CLIP_MODEL).to(device)
     clip_processor = CLIPProcessor.from_pretrained(CLIP_MODEL)
@@ -76,7 +76,7 @@ def run_text_to_image_evaluation(model_name, metrics=None, prompts=None, gender_
 
     # Return raw data or calculate metrics based on parameter
     if return_raw_data:
-        return gender_counts
+        result = gender_counts
     elif metrics:
         results = {}
         # Format data once inside the function
@@ -84,11 +84,26 @@ def run_text_to_image_evaluation(model_name, metrics=None, prompts=None, gender_
         for name, metric_func in metrics.items():
             value = metric_func(formatted_data)
             results[name] = value
-        return results
+        result = results
     else:
         # Return formatted data for external metric calculation
         print("\nGender Distribution:", gender_counts)
-        return format_data(gender_counts)
+        result = format_data(gender_counts)
+    
+    # Clean up GPU memory
+    if device == "cuda":
+        # Delete models to free GPU memory
+        del t2i_pipe
+        del clip_model
+        del clip_processor
+        # Clear all GPU cache
+        torch.cuda.empty_cache()
+        # Force garbage collection
+        import gc
+        gc.collect()
+        print("GPU memory cleaned up")
+    
+    return result
 
 if __name__ == "__main__":
     # Run with default settings when script is run directly
