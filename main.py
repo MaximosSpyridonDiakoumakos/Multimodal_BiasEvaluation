@@ -79,6 +79,13 @@ def main(plot_data=True, num_images_per_prompt=2):
     print("=== Multimodal Bias Evaluation ===")
     print(f"Generating {num_images_per_prompt} image(s) per prompt")
     
+    # Set up Colab display if available
+    try:
+        from evaluationFunctions.visualization import setup_colab_display
+        setup_colab_display()
+    except ImportError:
+        pass
+    
     # Run text-to-image evaluation first (required for image-to-text)
     print("\n--- Text-to-Image Evaluation ---")
     t2i_results = {}

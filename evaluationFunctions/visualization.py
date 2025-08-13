@@ -6,12 +6,33 @@ import numpy as np
 import seaborn as sns
 from typing import Dict, List, Any
 
+def setup_colab_display():
+    """Set up matplotlib for optimal display in Google Colab."""
+    try:
+        # Check if we're in Colab
+        import google.colab
+        # Set matplotlib backend for Colab
+        plt.rcParams['figure.figsize'] = (12, 8)
+        plt.rcParams['figure.dpi'] = 100
+        plt.rcParams['savefig.dpi'] = 100
+        print("Google Colab detected - matplotlib configured for optimal display")
+    except ImportError:
+        print("Not in Google Colab - using standard matplotlib settings")
+
 def setup_plot_style():
     """Set up consistent plot styling."""
     plt.style.use('default')
     sns.set_palette("husl")
     plt.rcParams['figure.figsize'] = (10, 6)
     plt.rcParams['font.size'] = 12
+    
+    # Colab-specific optimizations
+    try:
+        import google.colab
+        plt.rcParams['figure.figsize'] = (12, 8)
+        plt.rcParams['figure.dpi'] = 100
+    except ImportError:
+        pass
 
 def plot_gender_distribution(gender_counts: Dict[str, int], title: str = "Gender Distribution"):
     """
