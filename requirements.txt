@@ -4,7 +4,7 @@ torchvision
 torchaudio
 diffusers
 transformers
-PIL
+Pillow
 matplotlib
 seaborn
 numpy
