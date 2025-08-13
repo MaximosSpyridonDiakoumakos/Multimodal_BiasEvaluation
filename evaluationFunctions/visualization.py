@@ -264,15 +264,71 @@ def create_summary_report(results: Dict[str, Any], save_path: str = None):
                 for i, score in enumerate(scores):
                     axes[0, 1].text(i, score + 0.01, f'{score:.3f}', ha='center', va='bottom')
     
-    # Plot 3: Overall comparison (placeholder for now)
-    axes[1, 0].text(0.5, 0.5, 'Overall Comparison\n(To be implemented)', 
-                     ha='center', va='center', transform=axes[1, 0].transAxes)
-    axes[1, 0].set_title('Overall Model Comparison')
+    # Plot 3: Overall Model Comparison (MAD scores across all models)
+    all_models = []
+    all_mad_scores = []
     
-    # Plot 4: Summary statistics
-    axes[1, 1].text(0.5, 0.5, 'Summary Statistics\n(To be implemented)', 
-                     ha='center', va='center', transform=axes[1, 0].transAxes)
-    axes[1, 1].set_title('Summary Statistics')
+    # Collect MAD scores from text-to-image models
+    if 'text_to_image' in results:
+        for model_name, model_results in results['text_to_image'].items():
+            mad_value = model_results.get('mad', 0)
+            all_models.append(f"T2I: {model_name}")
+            all_mad_scores.append(safe_convert(mad_value))
+    
+    # Collect MAD scores from image-to-text models
+    if 'image_to_text' in results:
+        for model_name, model_results in results['image_to_text'].items():
+            mad_value = model_results.get('mad', 0)
+            all_models.append(f"I2T: {model_name}")
+            all_mad_scores.append(safe_convert(mad_value))
+    
+    if all_mad_scores:  # Only plot if we have valid scores
+        bars = axes[1, 0].bar(all_models, all_mad_scores, 
+                              color=['lightblue' if 'T2I:' in model else 'lightgreen' for model in all_models])
+        axes[1, 0].set_title('Overall Model Comparison (MAD Scores)')
+        axes[1, 0].set_ylabel('MAD Score')
+        axes[1, 0].tick_params(axis='x', rotation=45, ha='right')
+        
+        # Add value labels
+        for i, score in enumerate(all_mad_scores):
+            axes[1, 0].text(i, score + 0.01, f'{score:.3f}', ha='center', va='bottom')
+    
+    # Plot 4: Summary Statistics (Bias Score Distribution)
+    bias_scores = []
+    bias_labels = []
+    
+    # Collect bias-related metrics from all models
+    if 'text_to_image' in results:
+        for model_name, model_results in results['text_to_image'].items():
+            # Get bias-related metrics
+            explicit_bias = safe_convert(model_results.get('explicit_bias_score', 0))
+            implicit_bias = safe_convert(model_results.get('implicit_bias_score', 0))
+            distribution_bias = safe_convert(model_results.get('distribution_bias', 0))
+            
+            bias_scores.extend([explicit_bias, implicit_bias, distribution_bias])
+            bias_labels.extend([f'{model_name}_explicit', f'{model_name}_implicit', f'{model_name}_dist'])
+    
+    if 'image_to_text' in results:
+        for model_name, model_results in results['image_to_text'].items():
+            # Get bias-related metrics
+            distribution_bias = safe_convert(model_results.get('distribution_bias', 0))
+            demographic_parity = safe_convert(model_results.get('demographic_parity', 0))
+            
+            bias_scores.extend([distribution_bias, demographic_parity])
+            bias_labels.extend([f'{model_name}_dist', f'{model_name}_demo'])
+    
+    if bias_scores:  # Only plot if we have valid scores
+        # Create a horizontal bar chart for better readability
+        y_pos = range(len(bias_scores))
+        bars = axes[1, 1].barh(y_pos, bias_scores, color='lightcoral', alpha=0.7)
+        axes[1, 1].set_title('Bias Score Distribution Across Models')
+        axes[1, 1].set_xlabel('Bias Score')
+        axes[1, 1].set_yticks(y_pos)
+        axes[1, 1].set_yticklabels(bias_labels, fontsize=8)
+        
+        # Add value labels
+        for i, score in enumerate(bias_scores):
+            axes[1, 1].text(score + 0.01, i, f'{score:.3f}', ha='left', va='center', fontsize=8)
     
     plt.tight_layout()
     

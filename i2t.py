@@ -1,6 +1,6 @@
 # i2t_bias_caption_analysis.py
 
-from transformers import BlipProcessor, BlipForConditionalGeneration
+from transformers import BlipProcessor, BlipForConditionalGeneration, CLIPProcessor, CLIPModel
 from PIL import Image
 import os
 import torch
