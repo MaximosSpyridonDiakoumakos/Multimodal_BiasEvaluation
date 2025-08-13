@@ -71,8 +71,20 @@ def plot_metric_comparison(metrics_data: Dict[str, float], title: str = "Metric 
     """
     setup_plot_style()
     
+    # Helper function to safely convert numpy values to Python scalars
+    def safe_convert(value):
+        if isinstance(value, np.ndarray):
+            if value.size == 1:
+                return float(value.item())
+            else:
+                return float(np.mean(value))  # Take mean for multi-element arrays
+        elif isinstance(value, np.generic):
+            return float(value.item())
+        else:
+            return float(value)
+    
     metrics = list(metrics_data.keys())
-    values = list(metrics_data.values())
+    values = [safe_convert(value) for value in metrics_data.values()]
     
     plt.figure(figsize=(10, 6))
     bars = plt.bar(metrics, values, color='skyblue', alpha=0.7)
@@ -99,8 +111,20 @@ def plot_model_comparison(model_results: Dict[str, Dict[str, float]], metric_nam
     """
     setup_plot_style()
     
+    # Helper function to safely convert numpy values to Python scalars
+    def safe_convert(value):
+        if isinstance(value, np.ndarray):
+            if value.size == 1:
+                return float(value.item())
+            else:
+                return float(np.mean(value))  # Take mean for multi-element arrays
+        elif isinstance(value, np.generic):
+            return float(value.item())
+        else:
+            return float(value)
+    
     models = list(model_results.keys())
-    values = [model_results[model].get(metric_name, 0) for model in models]
+    values = [safe_convert(model_results[model].get(metric_name, 0)) for model in models]
     
     plt.figure(figsize=(10, 6))
     bars = plt.bar(models, values, color='lightcoral', alpha=0.7)
@@ -127,6 +151,18 @@ def plot_bias_heatmap(bias_data: Dict[str, Dict[str, float]], title: str = "Bias
     """
     setup_plot_style()
     
+    # Helper function to safely convert numpy values to Python scalars
+    def safe_convert(value):
+        if isinstance(value, np.ndarray):
+            if value.size == 1:
+                return float(value.item())
+            else:
+                return float(np.mean(value))  # Take mean for multi-element arrays
+        elif isinstance(value, np.generic):
+            return float(value.item())
+        else:
+            return float(value)
+    
     # Prepare data for heatmap
     models = list(bias_data.keys())
     metrics = set()
@@ -137,7 +173,7 @@ def plot_bias_heatmap(bias_data: Dict[str, Dict[str, float]], title: str = "Bias
     # Create matrix for heatmap
     heatmap_data = []
     for model in models:
-        row = [bias_data[model].get(metric, 0) for metric in metrics]
+        row = [safe_convert(bias_data[model].get(metric, 0)) for metric in metrics]
         heatmap_data.append(row)
     
     plt.figure(figsize=(12, 8))
