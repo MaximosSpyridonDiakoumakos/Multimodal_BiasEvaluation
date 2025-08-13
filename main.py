@@ -10,7 +10,7 @@ from model_config import *
 import torch
 #import custom_models import *
 
-def main(plot_data=True, num_images_per_prompt=4):
+def main(plot_data=True, num_images_per_prompt=5):
     """
     Main function to run multimodal bias evaluation with configurable models and metrics.
     

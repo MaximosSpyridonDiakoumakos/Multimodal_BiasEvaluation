@@ -58,6 +58,10 @@ def plot_gender_distribution(gender_counts: Dict[str, int], title: str = "Gender
         plt.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.1,
                 str(count), ha='center', va='bottom', fontweight='bold')
     
+    # Adjust y-axis to accommodate value labels
+    y_max = max(counts)
+    plt.ylim(0, y_max * 1.15)  # Add 15% padding above the highest bar
+    
     plt.tight_layout()
     plt.show()
 
@@ -96,6 +100,10 @@ def plot_metric_comparison(metrics_data: Dict[str, float], title: str = "Metric 
     for bar, value in zip(bars, values):
         plt.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.01,
                 f'{value:.3f}', ha='center', va='bottom', fontweight='bold')
+    
+    # Adjust y-axis to accommodate value labels
+    y_max = max(values)
+    plt.ylim(0, y_max * 1.15)  # Add 15% padding above the highest bar
     
     plt.xticks(rotation=45, ha='right')
     plt.tight_layout()
@@ -136,6 +144,10 @@ def plot_model_comparison(model_results: Dict[str, Dict[str, float]], metric_nam
     for bar, value in zip(bars, values):
         plt.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.01,
                 f'{value:.3f}', ha='center', va='bottom', fontweight='bold')
+    
+    # Adjust y-axis to accommodate value labels
+    y_max = max(values)
+    plt.ylim(0, y_max * 1.15)  # Add 15% padding above the highest bar
     
     plt.xticks(rotation=45, ha='right')
     plt.tight_layout()
@@ -229,9 +241,13 @@ def create_summary_report(results: Dict[str, Any], save_path: str = None):
             axes[0, 0].set_ylabel('MAD Score')
             axes[0, 0].tick_params(axis='x', rotation=45)
             
-            # Add value labels
-            for i, score in enumerate(t2i_mad_scores):
-                axes[0, 0].text(i, score + 0.01, f'{score:.3f}', ha='center', va='bottom')
+                    # Add value labels
+        for i, score in enumerate(t2i_mad_scores):
+            axes[0, 0].text(i, score + 0.01, f'{score:.3f}', ha='center', va='bottom')
+        
+        # Adjust y-axis to accommodate value labels
+        y_max = max(t2i_mad_scores)
+        axes[0, 0].set_ylim(0, y_max * 1.15)  # Add 15% padding above the highest bar
     
     # Plot 2: Image-to-Text Metrics
     if 'image_to_text' in results:
@@ -263,6 +279,10 @@ def create_summary_report(results: Dict[str, Any], save_path: str = None):
                 # Add value labels
                 for i, score in enumerate(scores):
                     axes[0, 1].text(i, score + 0.01, f'{score:.3f}', ha='center', va='bottom')
+                
+                # Adjust y-axis to accommodate value labels
+                y_max = max(scores)
+                axes[0, 1].set_ylim(0, y_max * 1.15)  # Add 15% padding above the highest bar
     
     # Plot 3: Overall Model Comparison (MAD scores across all models)
     all_models = []
@@ -292,6 +312,10 @@ def create_summary_report(results: Dict[str, Any], save_path: str = None):
         # Add value labels
         for i, score in enumerate(all_mad_scores):
             axes[1, 0].text(i, score + 0.01, f'{score:.3f}', ha='center', va='bottom')
+        
+        # Adjust y-axis to accommodate value labels
+        y_max = max(all_mad_scores)
+        axes[1, 0].set_ylim(0, y_max * 1.15)  # Add 15% padding above the highest bar
     
     # Plot 4: Summary Statistics (Bias Score Distribution)
     bias_scores = []
