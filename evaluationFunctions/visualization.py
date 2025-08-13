@@ -354,7 +354,8 @@ def create_summary_report(results: Dict[str, Any], save_path: str = None):
         for i, score in enumerate(bias_scores):
             axes[1, 1].text(score + 0.01, i, f'{score:.3f}', ha='left', va='center', fontsize=8)
     
-    plt.tight_layout()
+    # Adjust subplot spacing to prevent overlap
+    plt.subplots_adjust(hspace=0.4, wspace=0.3)
     
     if save_path:
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
