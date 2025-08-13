@@ -164,22 +164,38 @@ def create_summary_report(results: Dict[str, Any], save_path: str = None):
     """
     setup_plot_style()
     
+    # Helper function to safely convert numpy values to Python scalars
+    def safe_convert(value):
+        if isinstance(value, np.ndarray):
+            if value.size == 1:
+                return float(value.item())
+            else:
+                return float(np.mean(value))  # Take mean for multi-element arrays
+        elif isinstance(value, np.generic):
+            return float(value.item())
+        else:
+            return float(value)
+    
     fig, axes = plt.subplots(2, 2, figsize=(15, 12))
     fig.suptitle('Multimodal Bias Evaluation Summary', fontsize=16, fontweight='bold')
     
     # Plot 1: Text-to-Image MAD scores
     if 'text_to_image' in results:
         t2i_models = list(results['text_to_image'].keys())
-        t2i_mad_scores = [results['text_to_image'][model].get('mad', 0) for model in t2i_models]
+        t2i_mad_scores = []
+        for model in t2i_models:
+            mad_value = results['text_to_image'][model].get('mad', 0)
+            t2i_mad_scores.append(safe_convert(mad_value))
         
-        axes[0, 0].bar(t2i_models, t2i_mad_scores, color='lightblue')
-        axes[0, 0].set_title('Text-to-Image MAD Scores')
-        axes[0, 0].set_ylabel('MAD Score')
-        axes[0, 0].tick_params(axis='x', rotation=45)
-        
-        # Add value labels
-        for i, (model, score) in enumerate(zip(t2i_models, t2i_mad_scores)):
-            axes[0, 0].text(i, score + 0.01, f'{score:.3f}', ha='center', va='bottom')
+        if t2i_mad_scores:  # Only plot if we have valid scores
+            axes[0, 0].bar(t2i_models, t2i_mad_scores, color='lightblue')
+            axes[0, 0].set_title('Text-to-Image MAD Scores')
+            axes[0, 0].set_ylabel('MAD Score')
+            axes[0, 0].tick_params(axis='x', rotation=45)
+            
+            # Add value labels
+            for i, score in enumerate(t2i_mad_scores):
+                axes[0, 0].text(i, score + 0.01, f'{score:.3f}', ha='center', va='bottom')
     
     # Plot 2: Image-to-Text Metrics
     if 'image_to_text' in results:
@@ -192,21 +208,25 @@ def create_summary_report(results: Dict[str, Any], save_path: str = None):
             # Calculate average scores across models for each metric
             metric_scores = {}
             for metric in i2t_metrics:
-                scores = [i2t_results[model].get(metric, 0) for model in i2t_results.keys()]
+                scores = []
+                for model in i2t_results.keys():
+                    metric_value = i2t_results[model].get(metric, 0)
+                    scores.append(safe_convert(metric_value))
                 metric_scores[metric] = sum(scores) / len(scores)
             
             # Plot the metrics
             metrics = list(metric_scores.keys())
             scores = list(metric_scores.values())
             
-            axes[0, 1].bar(metrics, scores, color='lightgreen')
-            axes[0, 1].set_title('Image-to-Text Metrics')
-            axes[0, 1].set_ylabel('Score')
-            axes[0, 1].tick_params(axis='x', rotation=45)
-            
-            # Add value labels
-            for i, (metric, score) in enumerate(zip(metrics, scores)):
-                axes[0, 1].text(i, score + 0.01, f'{score:.3f}', ha='center', va='bottom')
+            if scores:  # Only plot if we have valid scores
+                axes[0, 1].bar(metrics, scores, color='lightgreen')
+                axes[0, 1].set_title('Image-to-Text Metrics')
+                axes[0, 1].set_ylabel('Score')
+                axes[0, 1].tick_params(axis='x', rotation=45)
+                
+                # Add value labels
+                for i, score in enumerate(scores):
+                    axes[0, 1].text(i, score + 0.01, f'{score:.3f}', ha='center', va='bottom')
     
     # Plot 3: Overall comparison (placeholder for now)
     axes[1, 0].text(0.5, 0.5, 'Overall Comparison\n(To be implemented)', 
@@ -215,7 +235,7 @@ def create_summary_report(results: Dict[str, Any], save_path: str = None):
     
     # Plot 4: Summary statistics
     axes[1, 1].text(0.5, 0.5, 'Summary Statistics\n(To be implemented)', 
-                     ha='center', va='center', transform=axes[1, 1].transAxes)
+                     ha='center', va='center', transform=axes[1, 0].transAxes)
     axes[1, 1].set_title('Summary Statistics')
     
     plt.tight_layout()
