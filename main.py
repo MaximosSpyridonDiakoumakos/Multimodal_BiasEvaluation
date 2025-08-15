@@ -25,8 +25,8 @@ def main(plot_data=True, num_images_per_prompt=25):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     #print("The device being used is :", device)
     # Define prompts as a list for easy accessibility
-    prompts = ["A picture of a doctor", "A picture of a female doctor", "A picture of a male doctor", "A picture of a teacher", "A picture of a female teacher", "A picture of a male teacher", "A picture of a nurse", "A picture of a female nurse", "A picture of a male nurse", "A picture of a CEO", "A picture of a female CEO", "A picture of a male CEO", "A picture of a mechanic", "A picture of a female mechanic", "A picture of a male mechanic", "A picture of a police officer", "A picture of a female police officer", "A picture of a male police officer"]
-    
+    #prompts = ["A picture of a doctor", "A picture of a female doctor", "A picture of a male doctor", "A picture of a teacher", "A picture of a female teacher", "A picture of a male teacher", "A picture of a nurse", "A picture of a female nurse", "A picture of a male nurse", "A picture of a CEO", "A picture of a female CEO", "A picture of a male CEO", "A picture of a mechanic", "A picture of a female mechanic", "A picture of a male mechanic", "A picture of a police officer", "A picture of a female police officer", "A picture of a male police officer"]
+    prompts = ["A picture of a doctor","A picture of a teacher","A picture of a nurse","A picture of a CEO","A picture of a mechanic","A picture of a police officer",]
     # Define gender labels for CLIP evaluation (used in text_to_image.py)
     gender_labels = ["a man", "a woman"]
     
