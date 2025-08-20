@@ -129,7 +129,7 @@ multimodal-bias-evaluation/
 └── evaluationFunctions/   # Evaluation modules
     ├── __init__.py
     ├── evaluation_functions.py
-    ├── gender_config.py
+    ├── word_config.py
     └── visualization.py
 ```
 

@@ -30,7 +30,7 @@ def run_text_to_image_evaluation(model_name, metrics=None, prompts=None, gender_
     # Load T2I model
     t2i_pipe = StableDiffusionPipeline.from_pretrained(
         model_name,
-        torch_dtype=torch.float32,
+        torch_dtype=torch.float32, #set as 32 to avoid gpu driver conflicts. Change as required.
     ).to(device)
     #print("\nDevice being used:", device, "\n")
     # Load CLIP for similarity scoring

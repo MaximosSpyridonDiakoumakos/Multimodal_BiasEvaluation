@@ -3,7 +3,7 @@ import numpy as np
 from numpy import dot
 from numpy.linalg import norm
 import re
-from .gender_config import *
+from .word_config import *
 
 
 

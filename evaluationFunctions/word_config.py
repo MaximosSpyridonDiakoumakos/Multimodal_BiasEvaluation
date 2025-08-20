@@ -1,4 +1,4 @@
-# gender_config.py
+# word_config.py
 # Configuration for gender terms used in evaluation functions
 
 # Gender terms dictionary for consistent usage across evaluation functions
